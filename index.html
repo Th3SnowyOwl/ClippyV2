@@ -19,5 +19,12 @@
       <footer></footer>
     </div>
     <script type="text/javascript" src="src/app.js"></script>
+    <!-- Generator -->
+  <button onclick="displayIframe()">Fancy Text Generator</button>
+  <div id="iframeDisplay"></div>  
+  <script>
+    function displayIframe() {
+        document.getElementById("iframeDisplay").innerHTML = "<iframe src=\"../generator/index.html\" height=\"100%\" width=\"100%\" ></iframe>";}
+  </script>    
   </body>
 </html>
