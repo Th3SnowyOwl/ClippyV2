@@ -4,7 +4,22 @@
     <title>Clipboard Inspector</title>
     <link rel="stylesheet" type="text/css" href="assets/style.css" />
     <link rel="icon" href="assets/favicon.png" />
-    <style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Clipboard & Drop Inspector</h1>
+        <p>
+          Working with the clipboard in web browsers is subject to many quirks and inconsistencies. This tool helps you explore the content of the clipboard when you paste something on a web page, or the data available on a
+          <a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/drop_event">drop</a> event.
+        </p>
+        <p>A <a href="https://labs.moqups.com">Moqups Labs</a> thing. <a href="https://github.com/Th3SnowyOwl/ClippyV2/">The project's GitHub page</a> contains sources and more references.</p>
+      </header>
+      <article><div id="app"></div></article>
+      <footer></footer>
+    </div>
+    <script type="text/javascript" src="src/app.js"></script>
+		<style>
     /* iframe's parent node */
     div#root {
         position: fixed;
@@ -19,27 +34,12 @@
         height: 100%;
         border: none;
     }
-</style>
-  </head>
-  <body>
-    <div class="page">
-      <header>
-        <h1>Clipboard & Drop Inspector</h1>
-        <p>
-          Working with the clipboard in web browsers is subject to many quirks and inconsistencies. This tool helps you explore the content of the clipboard when you paste something on a web page, or the data available on a
-          <a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/drop_event">drop</a> event.
-        </p>
-        <p>A <a href="https://labs.moqups.com">Moqups Labs</a> thing. <a href="https://github.com/Th3SnowyOwl/ClippyV2/">The project's GitHub page</a> contains sources and more references.</p>
-        <!-- Generator -->
+	</style>
+	        <!-- Generator -->
         <div id="root">
 		      <iframe src="https://patorjk.com/text-color-fader/">
 		      Your browser does not support inline frames.
 		      </iframe>
 	       </div>
-      </header>
-      <article><div id="app"></div></article>
-      <footer></footer>
-    </div>
-    <script type="text/javascript" src="src/app.js"></script>
   </body>
 </html>
