@@ -1,0 +1,570 @@
+
+/*
+	Ideas:
+    - social buttons
+    - footer
+
+	- Off-line web app
+	- Chrome web store
+*/
+
+// setup 'globals'
+var appState = 'input';
+var maxNumColors = 20;
+var presets = presets || {};
+
+presets['Random'] = {};
+presets['Random'].name = 'Random';
+presets['Random'].author = 'Pat';
+presets['Random'].colors = ['#ff0000', '#00ff00', '#0000ff'];
+
+presets['Rainbow'] = {};
+presets['Rainbow'].name = 'Rainbow';
+presets['Rainbow'].author = '';
+presets['Rainbow'].colors = ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#8b00ff'];//, '8b00ff'
+
+var localPresets = {};
+if (localStorage) {
+    try {
+        localPresets = JSON.parse(localStorage.getItem('localPresets') || "{}");
+
+        console.log('localPresets');
+        console.dir(localPresets);
+
+    } catch(err) {
+        console.error('There was an error...');
+        console.dir(err);
+        localPresets = {};
+    }
+}
+
+// ok-ing console usage
+if (typeof console === 'undefined') {
+    var console = {};
+    console.log = function(){};
+    console.dir = function(){};
+}
+
+// email plugin
+jQuery.fn.mailto = function() {
+    return this.each(function(){
+        var email = $(this).attr('href').replace(/\s*\(.+\)\s*/, "@");
+        $(this).attr('href', 'mailto:'+email);
+    });
+};
+
+// stupid color picker
+function forceToSixDigits(hexStr) {
+    if (hexStr.length === 4) {
+        var ret = '#';
+        ret += hexStr.substr(1,1) + hexStr.substr(1,1);
+        ret += hexStr.substr(2,1) + hexStr.substr(2,1);
+        ret += hexStr.substr(3,1) + hexStr.substr(3,1);
+        return ret;
+    } else {
+        return hexStr;
+    }
+}
+
+var prop;
+
+$(function() {
+
+    // local presets!
+    for (prop in localPresets) {
+
+        if ( !localPresets.hasOwnProperty(prop) ) continue;
+
+        var html = '<option value="' + prop + '">'+localPresets[prop].name+'</option>';
+
+        $('#localPresets').append( $(html) );
+    }
+
+    /*
+        Update preset list!
+    */ 
+    for (prop in presets) {
+
+        if ( !presets.hasOwnProperty(prop) ) continue;
+        if ( prop === 'Rainbow') continue;
+        if ( prop === 'Random') continue;
+
+        var html = '<option value="' + prop + '">'+presets[prop].name+'</option>';
+
+        $('#newlySubmitted').append( $(html) );
+    }
+    
+    $("#colorPresets").chosen();
+
+    $('.email').mailto(); // setup email link
+
+    /*
+        Cookie Code
+    */
+
+    if (NW === false) {
+        var cFadeType = $.cookie('fadeType');
+        if ( typeof cFadeType !== 'undefined' ) {
+            $('#fadeType').val(cFadeType);
+
+            if ( cFadeType === 'horizontal-spin-back' || cFadeType === 'horizontal-spin-forward' ) {
+                $('#spinDisplay').css({
+                    'display':'block'
+                });
+            } else {
+                $('#spinDisplay').css({
+                    'display':'none'
+                });
+            }
+        }
+
+        var cOutputCode = $.cookie('outputCode');
+        if ( typeof cOutputCode !== 'undefined' ) {
+            $('#outputCode').val(cOutputCode);
+        }
+
+        var cResultDisplay = $.cookie('resultDisplay');
+        if ( typeof cResultDisplay !== 'undefined' ) {
+            $('#resultDisplay').val(cResultDisplay);
+        }
+
+        var cNumColors = $.cookie('numColors');
+        if ( typeof cNumColors !== 'undefined' ) {
+            
+            var cNumColors = parseInt(cNumColors, 10);
+
+            if (cNumColors >= 2 && cNumColors <= 20) {
+                $('#numColors').val(cNumColors);
+            }
+        }
+
+    }
+
+    $('#fadeType').change(function() {
+        $.cookie('fadeType', $('#fadeType').find('option:selected').attr('value'), { expires: 365 });
+
+        var fadeType = $('#fadeType').find('option:selected').attr('value');
+        if ( fadeType === 'horizontal-spin-back' || fadeType === 'horizontal-spin-forward' ) {
+            $('#spinDisplay').css({
+                'display':'block'
+            });
+        } else {
+            $('#spinDisplay').css({
+                'display':'none'
+            });
+        }
+
+    });
+    $('#outputCode').change(function() {
+        $.cookie('outputCode', $('#outputCode').find('option:selected').attr('value'), { expires: 365 });
+    });
+    $('#resultDisplay').change(function() {
+        $.cookie('resultDisplay', $('#resultDisplay').find('option:selected').attr('value'), { expires: 365 });
+    });
+    $('#numColors').change(function() {
+        $.cookie('numColors', $('#numColors').find('option:selected').attr('value'), { expires: 365 });
+    });
+
+    $('#monospaceCheckbox').click(function() {
+        if ( $('#monospaceCheckbox').is(':checked')) {
+            $('#fadeOutput').css({
+                'font-family':'monospace'
+            })
+        } else {
+            $('#fadeOutput').css({
+                'font-family':''
+            })
+        }
+    });
+
+    /*
+        Private functions
+    */
+
+    var showColorPickers = function(num) {
+        for (ii = 0; ii < maxNumColors; ii++) {
+            if ( ii < num) {
+                if ( !jQuery.support.inlineBlockNeedsLayout ) {
+                    $("#wrap-color"+ii).css({'display': 'inline-block'});
+                } else {
+                    $("#wrap-color"+ii).css({'display': 'inline'});
+                    $("#wrap-color"+ii).css({'zoom': '1'});
+                }
+            } else {
+                $("#wrap-color"+ii).css({'display': 'none'});
+            }
+        }
+    };
+
+    var loadColorPreset = function( opt, isLoading ) {
+        var color, ii, r, g, b;
+        var presetObj = {};
+
+        presetObj = localPresets[opt] ? localPresets[opt] : presets[opt];
+
+        if (opt === 'Random') {
+            for (ii = 0; ii < maxNumColors; ii++) {
+                r = Math.floor(Math.random()*256);
+                g = Math.floor(Math.random()*256);
+                b = Math.floor(Math.random()*256);
+                presets[opt].colors[ii] = Fader.decToHex(r) + Fader.decToHex(g) + Fader.decToHex(b);
+            }
+        }
+
+        for (ii = 0; ii < maxNumColors; ii++) {
+            color = presetObj.colors[ii % presetObj.colors.length];
+
+            $("#color"+ii).spectrum('set', '#'+color);
+        }
+
+        if (opt !== 'Random' && isLoading !== true) {
+            $('#numColors').val( presetObj.colors.length );
+            $('#numColors').change();
+        }
+    }
+
+    var getNumberOfColors = function() {
+        return parseInt($('#numColors').find('option:selected').attr('value'), 10);
+    };
+
+    var getColorPreset = function() {
+        return $('#colorPresets').find('option:selected').attr('value');
+    };
+
+    // setup color pickers
+    for (var ii = 0; ii < maxNumColors; ii++) {
+        $("#color"+ii).spectrum({
+            color: '#ff0000',
+            showInput: true
+        });
+    }
+    $('#resultBackground').spectrum({
+        color: '#000000',
+        showInput: true,
+        change: function(color) {
+            $('#fadeResultContainer').css({'background-color': color.toHexString()});
+            $('#fadeResultContainer').css({'z-index': 20000});
+        }
+    });
+
+    $('#resultModal .sp-input').on({
+        click: function() {
+            //console.log('click!');
+        }
+    });
+
+    // Setup Interface
+
+    showColorPickers( getNumberOfColors() );
+    loadColorPreset( getColorPreset(), true )
+
+    // Setup functionality
+
+    $('#showNews').click(function() {
+        $('#newsModal').modal('show');
+    });
+    $('#showAbout').click(function() {
+        $('#aboutModal').modal('show');
+    });
+
+    $('#applyPreset').click(function() {
+        loadColorPreset( getColorPreset() );
+    });
+    $('#colorPresets').change(function() {
+       loadColorPreset( getColorPreset() ); 
+    })
+
+    $('#submitAsPreset').click(function() {
+
+        // make sure the form is ready to go
+        $('#sub-name').val('');
+        $('#sub-name').removeAttr('disabled');
+        $('#sub-author').removeAttr('disabled');
+        $('#sub-email').removeAttr('disabled');
+
+        $('#presetSubmitDialog').modal('show');
+    });
+
+    $('#importPresetsAction').click(function() {
+        try {
+            console.log( $('#importPresetText').val() );
+
+            var newPresets = JSON.parse( $('#importPresetText').val() );
+
+            console.dir( newPresets );
+
+            for (var prop in newPresets) {
+                if ( !localPresets[prop] ) {
+                    localPresets[prop] = newPresets[prop];
+
+                    var html = '<option value="' + prop + '">'+localPresets[prop].name+'</option>';
+                    $('#localPresets').append( $(html) );
+                }
+            }
+
+            $("#colorPresets").trigger("chosen:updated");
+
+            localStorage.setItem( 'localPresets', JSON.stringify(localPresets) );
+
+            $('#presetImportDialog').modal('hide');
+
+        } catch(err) {
+            console.dir(err);
+            alert('Something went wrong :(');
+        }
+    });
+
+    $('#importPresets').click(function() {
+        $('#presetImportDialog').modal('show');
+    });
+
+    $('#exportPresets').click(function() {
+        $('#presetExportDialog').modal('show');
+        
+        setTimeout(function() {
+            $('#exportPresetText').val( JSON.stringify(localPresets, null, 2) );
+        }, 1000);
+    });
+
+    $('#clearPresets').click(function() {
+        var sure1 = confirm('Are you sure you want to delete all of your local presets?');
+        if (sure1 === true) {
+            var sure2 = confirm('Soooo just to be 100% sure, you want to delete all of your local presets?');
+            if (sure2 === true) {
+                localStorage.removeItem('localPresets');
+                alert('Next time you refresh your browser they will be gone.');
+            }
+        }
+    });
+
+    $('#saveLayoutBtn').click(function() {
+
+        try {
+            localPresets = JSON.parse(localStorage.getItem('localPresets') || "{}");
+
+            var name = '__local_' + $('#save-name').val();
+            console.log('storage name:'+name);
+            localPresets[name] = {};
+            localPresets[name].name = $('#save-name').val();
+            localPresets[name].author = $('#save-author').val();
+            
+
+            var numColors = getNumberOfColors(),
+                ii,
+                jj,
+                colors = [],
+                colorsRgb = [];
+
+            for (ii = 0; ii < numColors; ii++) {
+                colors.push( forceToSixDigits($('#color'+ii).spectrum('get').toHexString()) );
+            }
+
+            localPresets[name].colors = colors;
+
+            localStorage.setItem( 'localPresets', JSON.stringify(localPresets) );
+
+            var html = '<option value="' + name + '">'+localPresets[name].name+'</option>';
+            $('#localPresets').append( $(html) );
+
+            $('#localPresetSubmitDialog').modal('hide');
+
+            $("#colorPresets").trigger("chosen:updated");
+
+        } catch(err) {
+            alert('Failed to save. Not sure why. Maybe something with the preset name?');
+            $('#localPresetSubmitDialog').modal('hide');
+        }
+
+    });
+
+    $('#savePreset').click(function() {
+
+        // make sure the form is ready to go
+        $('#save-name').val('');
+        $('#save-name').removeAttr('disabled');
+        $('#save-author').removeAttr('disabled');
+
+        $('#localPresetSubmitDialog').modal('show');
+    });
+
+    $('#submitLayoutBtn').click(function() {
+
+        var presetName = $('#sub-name').val();
+        var author = $('#sub-author').val();
+        var email = $('#sub-email').val();
+
+        if ( $.trim(presetName) === '' ) {
+            alert('Please enter in a name for the preset.');
+            return;
+        }
+        if ( $.trim(email) === '' || email.indexOf('@') === -1) {
+            alert('Please enter in an email address.');
+            return;
+        }
+
+        // VALIDATION
+        // ensure preset name doesn't already exist
+        var presetSelectText = [];
+        $('#colorPresets option').each(function() {
+            presetSelectText.push($(this).text().toLowerCase());
+        });
+
+        if ( $.inArray(presetName.toLowerCase(), presetSelectText) !== -1) {
+            alert('A preset with that name already exists. Please pick a different name.');
+            return;
+        }
+
+        $('#sub-name').attr('disabled', 'disabled');
+        $('#sub-author').attr('disabled', 'disabled');
+        $('#sub-email').attr('disabled', 'disabled');
+
+        var numColors = getNumberOfColors(),
+            ii,
+            jj,
+            colors = [],
+            colorsRgb = [];
+
+        for (ii = 0; ii < numColors; ii++) {
+            colors.push( forceToSixDigits($('#color'+ii).spectrum('get').toHexString()) );
+        }
+
+        for (ii in presets) {
+            if (!presets.hasOwnProperty(ii)) continue;
+            var set1 = presets[ii].colors.join('').toLowerCase();
+            var set2 = colors.join('').toLowerCase();
+            if (set1 === set2) {
+                alert('This preset already exists. It has the name: '+presets[presetSelectVals[ii]].name);
+                return;
+            }
+        }
+
+        var set1 = presets['Rainbow'].colors.join('').toLowerCase();
+        var set2 = colors.join('').toLowerCase();
+        if (set1.indexOf(set2) !== -1) {
+            alert('This appears to be too similar to the Rainbow preset.');
+            return;
+        }
+        
+        $.ajax({
+            method: 'POST',
+            url: '/colors/api/submit-preset.php',
+            data: {
+                name: presetName,
+                author: author,
+                email: email,
+                colors: JSON.stringify(colors)
+            }
+        })
+        .success(function(data) {
+            console.dir(data);
+            $('#presetSubmitDialog').modal('hide');
+        })
+        .error(function(data, status, headers, config) {
+            console.dir(data);
+            alert('Unexpected Error. Preset not submitted.');
+            $('#presetSubmitDialog').modal('hide');
+        });
+
+/*
+        $.ajax({
+            method: 'POST',
+            url: './api/submit-preset.php',
+            data: {
+                presetName: presetName,
+                author: author,
+                email: email,
+                colors: JSON.stringify(colors)
+            }
+        })
+        .success(function(data) {
+            console.dir(data);
+            $('#presetSubmitDialog').modal('hide');
+        })
+        .error(function(data, status, headers, config) {
+            console.dir(data);
+            alert('Unexpected Error. Preset not submitted.');
+            $('#presetSubmitDialog').modal('hide');
+        });
+*/
+    })
+
+    $('#numColors').change(function() {
+        var num = getNumberOfColors(),
+            ii;
+        showColorPickers(num);
+    });
+
+    $('#generate').click(function() {
+        var colors = [], 
+            numColors = getNumberOfColors(),
+            ii,
+            ret, retHtml;
+
+        if ( $('#resultDisplay').find('option:selected').attr('value') === 'new' ) {
+
+            for (ii = 0; ii < numColors; ii++) {
+                colors.push( $('#color'+ii).spectrum('get').toHexString() );
+            }
+
+            $('#nwMessage').val($('#message').val());
+            $('#nwNumColors').val(numColors);
+            $('#nwColors').val( JSON.stringify(colors) );
+            $('#nwFadeType').val($('#fadeType').find('option:selected').attr('value'));
+            $('#nwOutputCode').val($('#outputCode').find('option:selected').attr('value'));
+
+            $('#nwForm').submit();
+
+            return;
+        }
+
+        if ( appState === 'input') {
+
+            appState = 'transition';
+
+            for (ii = 0; ii < numColors; ii++) {
+                colors.push( $('#color'+ii).spectrum('get').toHexString() );
+            }
+
+            ret = TextFader.fade({
+                colors: colors,
+                txt: $('#message').val(),
+                type: $('#fadeType').find('option:selected').attr('value'),
+                output: $('#outputCode').find('option:selected').attr('value'),
+                spinSpeed: $('#spinSpeed').val()
+            });
+
+            retHtml = TextFader.fade({
+                colors: colors,
+                txt: $('#message').val(),
+                type: $('#fadeType').find('option:selected').attr('value'),
+                output: 'html-span',
+                spinSpeed: $('#spinSpeed').val()
+            });
+
+            $('#resultCode').val(ret);
+            $('#fadeOutput').html(retHtml);
+
+            $('#input-page').fadeOut(400, function() {
+
+                $('#generate').html('Create a New Fade');
+
+                $('#output-page').fadeIn(400, function() {
+                    appState = 'output';
+                });
+            });
+        } else if ( appState === 'output') {
+            $('#output-page').fadeOut(400, function() {
+                
+                $('#generate').html('Generate Color Faded Text');
+
+                $('#input-page').fadeIn(400, function() {
+                    appState = 'input';
+                });
+            });
+        }
+    });
+
+    $('#resultSelectAll').click(function() {
+        $('#resultCode').select();
+    });
+});
